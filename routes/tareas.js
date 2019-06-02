@@ -150,14 +150,28 @@ async function crearTarea(req, res) {
 
   const jsonBody = req.body;
 
-  const modeloACrear = {
-    description: jsonBody.description,
-    status: "PENDIENTE"
-  };
+  if (jsonBody.descripcion !== null && jsonBody.descripcion.length > 0){
+    const modeloACrear = {
+      description: jsonBody.description,
+      status: "PENDIENTE"
+    };
+    const tareaCreada = await tareasLogic.create(modeloACrear);
+    res.send(tareaCreada);
+    res.end();
 
-  const tareaCreada = await tareasLogic.create(modeloACrear);
-  res.send(tareaCreada);
-  res.end();
+  } else{
+       res.statusCode = 400;
+       res.send({
+         message: `Campo requerido`,
+         details: "description required"
+       });
+       res.end();
+       return;
+  }
+
+  
+
+  
 }
 
 /**
