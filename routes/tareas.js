@@ -168,10 +168,7 @@ async function crearTarea(req, res) {
        res.end();
        return;
   }
-
-  
-
-  
+ 
 }
 
 /**
@@ -198,6 +195,90 @@ async function obtenerTarea(req, res) {
   
 }
 
+async function eliminarTarea(req, res){
+  const {idTarea} = req.params;
+  try {
+    const tarea = await tareasLogic.erase(idTarea);
+    res.send(tarea);
+    res.end();
+  } catch (error) {
+    res.statusCode = 400;
+    res.send({
+      message: `Can't find objecti with id : ${idTarea}`,
+      details: "This endpoint expected a valid object identifier"
+    });
+    res.end();
+  }
+}
+
+async function actualizarTarea(req, res) {
+  const contentTypeHeader = req.header("Content-Type");
+  if (!validContentTypeHeader(contenTypeHeader)){
+    res.statusCode = 400;
+    res.send({
+      message: `Can't find objecti with id : ${idTarea}`,
+      details: "This endpoint expected a valid object identifier"
+    });
+    res.end();
+    return;
+  }
+
+  const {idTarea} = req.params;
+  const jsonBody = req.body;
+  let error = false;
+  let message ="", title = "";
+  let status = jsonBody.status;
+  let descripcion = jsonBody.descripcion;
+  let camposMod = {};
+  if ((typeof(status) !== "undefined" && status !== null) || 
+  (typeof(status) !== "undefined" && descripcion !== null)){
+    if (status !== null){
+      if (["TERMINADO", "PENDIENTE", "CANCELADO"].indexOf(status.toString()) >= 0){
+        camposMod.status = status.toString();
+      } else {
+        error = true;
+        title = "Campo invalido";
+        message = "Status not in [TERMINADO,PENDIENTE,CANCELADO]";
+      }
+    }
+    if (descripcion !== null){
+      if (descripcion.toString().length > 0){
+        camposMod.descripcion = descripcion.toString();
+      } else {
+        error = true;
+        title = "campo invalido";
+        message = "descripcion no puede ser vacio";
+      }
+    }
+  } else {
+    error = true;
+    title = "campo requerido";
+    message = "estado o descripcion requerido";
+  }
+  if (error){
+    res.statusCode = 400;
+    res.send({
+      message: title,
+      details: messege
+    });
+    res.end();
+  } else {
+    try {
+      const tareaActualizada = await tareasLogic.update(idTarea,camposMod);
+      const tarea = await tareasLogic.getOne(idTarea);
+      res.send(tarea);
+      res.end();
+    }catch (error){
+      res.statusCode = 400;
+      res.send({
+        message: `Can't find objecti with id : ${idTarea}`,
+        details: "This endpoint expected a valid object identifier"
+      });
+      res.end();
+    }
+  }
+}
+
 tareasRouter
   .route("/")
   .all(allRequest)
@@ -222,18 +303,8 @@ tareasRouter
     res.statusCode = 405;
     res.end("POST operation is not suported on /tareas/" + req.params.idTarea);
   })
-  .put((req, res, next) => {
-    res.write("Actualizando la tarea: " + req.params.idTarea + "\n");
-    res.end(
-      "Actualizando la tarea: " +
-        req.body.descripcion +
-        " with details: " +
-        req.body.estado
-    );
-  })
-  .delete((req, res, next) => {
-    res.end("Borrando la tarea : " + req.params.idTarea);
-  });
+  .put(actualizarTarea)
+  .delete(eliminarTarea);
 
 module.exports = tareasRouter;
 
